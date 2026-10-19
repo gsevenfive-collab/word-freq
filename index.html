@@ -414,7 +414,9 @@ td.acts .mk,td.acts .fav{width:32px;height:32px;font-size:17px;margin-left:2px}
     </div>
     <div class="chips">
       <button class="chip on" id="fb-all">全部公式<span class="n" id="c-fb"></span></button>
+      <button class="chip" id="fb-mastered">✓ 已掌握<span class="n" id="c-fbmas"></span></button>
       <button class="chip" id="fb-fav">★ 收藏<span class="n" id="c-fbfav"></span></button>
+      <button class="chip reset" id="fb-reset">↺ 重置</button>
       <button class="chip" id="fb-open">全部展开</button>
     </div>
     <div class="overview" id="fbstats"></div>
@@ -550,7 +552,7 @@ const $ = id => document.getElementById(id);
 let LANG = null;
 let DATA = [], FORMULAS = [], ALL_BLANK = [];
 let nf = new Intl.NumberFormat('en-US');
-let mastered = new Set(), favWords = new Set(), favForms = new Set(), quizRec = {};
+let mastered = new Set(), masteredForms = new Set(), favWords = new Set(), favForms = new Set(), quizRec = {};
 
 /* 每门语言独立的存储键，进度/收藏互不干扰 */
 function sk(name){ return 'wf-' + LANG + '-' + name; }
@@ -558,12 +560,14 @@ function loadState(){
   mastered = new Set(JSON.parse(localStorage.getItem(sk('mastered')) || '[]'));
   favWords = new Set(JSON.parse(localStorage.getItem(sk('favw'))    || '[]'));
   favForms = new Set(JSON.parse(localStorage.getItem(sk('favf'))    || '[]'));
+  masteredForms = new Set(JSON.parse(localStorage.getItem(sk('masteredf')) || '[]'));
   quizRec  = JSON.parse(localStorage.getItem(sk('quiz'))            || '{}');
 }
 function saveAll(){
   localStorage.setItem(sk('mastered'), JSON.stringify([...mastered]));
   localStorage.setItem(sk('favw'), JSON.stringify([...favWords]));
   localStorage.setItem(sk('favf'), JSON.stringify([...favForms]));
+  localStorage.setItem(sk('masteredf'), JSON.stringify([...masteredForms]));
   localStorage.setItem(sk('quiz'), JSON.stringify(quizRec));
 }
 function rebuildBlankPool(){
@@ -718,6 +722,9 @@ function renderWords(){
 /* ================= 公式浏览 ================= */
 function fbList(){
   let rows = FORMULAS.map((_, i) => i);
+  /* 选「已掌握」时只显示已掌握的；其余筛选都先把已掌握的隐去 */
+  if (fbFilter === 'mastered') rows = rows.filter(i => masteredForms.has(i));
+  else rows = rows.filter(i => !masteredForms.has(i));
   if (fbFilter === 'fav') rows = rows.filter(i => favForms.has(i));
   if (fbQuery){
     const q = fbQuery.toLowerCase();
@@ -733,7 +740,8 @@ function fbList(){
 function renderFormula(){
   const rows = fbList();
   const totalEx = FORMULAS.reduce((n, f) => n + f.ex.length, 0);
-  $('c-fb').textContent = FORMULAS.length;
+  $('c-fb').textContent = FORMULAS.length - masteredForms.size;
+  $('c-fbmas').textContent = masteredForms.size;
   $('c-fbfav').textContent = favForms.size;
   $('fbstats').innerHTML = `共 <b>${FORMULAS.length}</b> 个公式<span class="sep">·</span>例句 <b>${totalEx}</b> 条`
     + `<span class="sep">·</span>显示 <b>${rows.length}</b> 个`;
@@ -753,7 +761,8 @@ function renderFormula(){
         <div class="fmeta">
           <span>${f.ex.length} 例</span><span class="dot">·</span><span>可填 ${qn}</span>
           <span class="grow"></span>
-          <button class="fav ${favForms.has(i) ? 'on' : ''}" data-qfav="${i}">${favForms.has(i) ? '♥' : '♡'}</button>
+          <button class="mk ${masteredForms.has(i) ? 'on' : ''}" data-fmk="${i}" title="标记已掌握">${masteredForms.has(i) ? '★' : '☆'}</button>
+          <button class="fav ${favForms.has(i) ? 'on' : ''}" data-qfav="${i}" title="收藏">${favForms.has(i) ? '♥' : '♡'}</button>
           <span class="chev">▼</span>
         </div>
       </div>
@@ -1063,6 +1072,14 @@ document.addEventListener('click', e => {
     if (tab === 'fav') renderFav(); else renderWords();
     updateFavBadge(); return;
   }
+  const fmk = t.closest('[data-fmk]');
+  if (fmk){
+    const i = parseInt(fmk.dataset.fmk, 10);
+    masteredForms.has(i) ? masteredForms.delete(i) : masteredForms.add(i);
+    saveAll();
+    renderFormula();
+    updateFavBadge(); return;
+  }
   const qfv = t.closest('[data-qfav]');
   if (qfv){
     const i = parseInt(qfv.dataset.qfav, 10);
@@ -1140,6 +1157,22 @@ $('fb-fav').onclick = () => {
   document.querySelectorAll('#ctl-formula .chip').forEach(b => b.classList.remove('on'));
   $('fb-fav').classList.add('on'); renderFormula();
 };
+$('fb-mastered').onclick = () => {
+  fbFilter = (fbFilter === 'mastered') ? 'all' : 'mastered';
+  document.querySelectorAll('#ctl-formula .chip').forEach(b => b.classList.remove('on'));
+  $(fbFilter === 'mastered' ? 'fb-mastered' : 'fb-all').classList.add('on');
+  renderFormula();
+};
+$('fb-reset').onclick = () => {
+  if (!masteredForms.size) return;
+  if (confirm('重置公式进度？已掌握的 ' + masteredForms.size + ' 个公式会回到「全部公式」列表（收藏保留）。')) {
+    masteredForms = new Set(); saveAll();
+    fbFilter = 'all';
+    document.querySelectorAll('#ctl-formula .chip').forEach(b => b.classList.remove('on'));
+    $('fb-all').classList.add('on');
+    renderFormula();
+  }
+};
 $('fq').addEventListener('input', ev => { fbQuery = ev.target.value; renderFormula(); });
 $('fb-open').onclick = () => {
   if (openSet.size){ openSet = new Set(); $('fb-open').textContent = '全部展开'; }
@@ -1187,7 +1220,7 @@ function openSheet(){
       「设置 → 时间和语言 → 语音 → 添加语音」装本地英语语音。</span></div>
     <div class="kv"><span class="k">已掌握</span><span class="v">${mastered.size} 词</span></div>
     <div class="kv"><span class="k">已做题</span><span class="v">${Object.keys(quizRec).length} 道</span></div>
-    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 16:10</span></div>
+    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 16:20</span></div>
     <div class="act">
       <button id="voice-test">🔊 试听一句</button>
       <button id="sheet-close">关闭</button>
