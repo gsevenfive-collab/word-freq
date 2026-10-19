@@ -324,14 +324,14 @@ td.acts .mk,td.acts .fav{width:32px;height:32px;font-size:17px;margin-left:2px}
   tbody td{display:block;border:none;padding:0;width:auto}
   td.rk{order:1;font-size:11.5px;min-width:24px;color:var(--fg3)}
   td:nth-child(2){order:2}
-  td.ipa{order:3;margin-left:auto}
+  /* 音标、次数往左靠，把右边空间让给掌握/收藏 */
+  td.ipa{order:3}
   td.ct{order:4;font-size:11.5px}
   td.cn{order:7;flex-basis:100%;margin-top:5px;font-size:14.5px}
   td.ex{order:8;flex-basis:100%;margin-top:5px;display:block}
-  /* 掌握/收藏独占一行、右对齐、44px 大按钮 */
-  td.acts{order:9;flex-basis:100%;display:flex;justify-content:flex-end;
-    gap:8px;margin-top:9px}
-  td.acts .mk,td.acts .fav{font-size:20px;min-width:46px;min-height:42px;
+  /* 掌握/收藏靠右，与单词同一行 */
+  td.acts{order:5;margin-left:auto;display:flex;gap:8px}
+  td.acts .mk,td.acts .fav{font-size:19px;min-width:44px;min-height:40px;
     border-radius:10px;border:1px solid var(--line);background:var(--card2)}
   .wd{white-space:normal;font-size:16.5px}
   /* 触控目标放大到 36px（原来约 20px，不好按） */
@@ -1170,7 +1170,7 @@ function openSheet(){
       「设置 → 时间和语言 → 语音 → 添加语音」装本地英语语音。</span></div>
     <div class="kv"><span class="k">已掌握</span><span class="v">${mastered.size} 词</span></div>
     <div class="kv"><span class="k">已做题</span><span class="v">${Object.keys(quizRec).length} 道</span></div>
-    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 15:55</span></div>
+    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 16:00</span></div>
     <div class="act">
       <button id="voice-test">🔊 试听一句</button>
       <button id="sheet-close">关闭</button>
