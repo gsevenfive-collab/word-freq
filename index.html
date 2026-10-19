@@ -125,6 +125,8 @@ tbody tr:active{background:rgba(91,157,255,.08)}
 .spkw{font-size:12.5px;padding:0 3px;opacity:.9}
 .mk,.fav{display:inline-grid;place-items:center;font-size:16px;padding:3px 5px;
   border-radius:7px;color:#33405c;line-height:1;transition:.14s}
+td.acts{white-space:nowrap}
+td.acts .mk,td.acts .fav{width:32px;height:32px;font-size:17px;margin-left:2px}
 .mk.on{color:var(--acc2)}
 .fav.on{color:var(--star)}
 .mk:active,.fav:active{transform:scale(.86)}
@@ -315,7 +317,7 @@ tbody tr:active{background:rgba(91,157,255,.08)}
   thead th{display:inline-block;flex:none;width:auto!important;padding:5px 11px;
     font-size:11.5px;background:var(--card);border:1px solid var(--line);
     border-radius:20px;font-weight:500}
-  thead th:nth-child(7),thead th:nth-child(8){display:none}
+  thead th:nth-child(7){display:none}
   table,tbody{display:block}
   tbody tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 6px;
     padding:12px 14px;border-bottom:1px solid rgba(33,43,64,.55);background:none}
@@ -324,14 +326,22 @@ tbody tr:active{background:rgba(91,157,255,.08)}
   td:nth-child(2){order:2}
   td.ipa{order:3;margin-left:auto}
   td.ct{order:4;font-size:11.5px}
-  td:nth-child(7){order:5}
-  td:nth-child(8){order:6}
   td.cn{order:7;flex-basis:100%;margin-top:5px;font-size:14.5px}
   td.ex{order:8;flex-basis:100%;margin-top:5px;display:block}
+  /* 掌握/收藏独占一行、右对齐、44px 大按钮 */
+  td.acts{order:9;flex-basis:100%;display:flex;justify-content:flex-end;
+    gap:8px;margin-top:9px}
+  td.acts .mk,td.acts .fav{font-size:20px;min-width:46px;min-height:42px;
+    border-radius:10px;border:1px solid var(--line);background:var(--card2)}
   .wd{white-space:normal;font-size:16.5px}
-  td:nth-child(2) .spk{font-size:14px;padding:2px 4px}
-  td:nth-child(2) .spkw{font-size:12px;padding:2px 2px}
-  td:nth-child(7) .mk,td:nth-child(8) .fav{font-size:15px;padding:2px 3px}
+  /* 触控目标放大到 36px（原来约 20px，不好按） */
+  td:nth-child(2) .spk{font-size:18px;padding:0;min-width:36px;min-height:36px}
+  td:nth-child(2) .spkw{font-size:15px;padding:0;min-width:34px;min-height:34px}
+
+  .spkex{font-size:15px;padding:0;min-width:32px;min-height:32px}
+  td.ipa{font-size:11.5px}
+  td.ct{font-size:10.5px}
+  td.rk{font-size:11px}
   .wrap{padding:0 14px}
 }
 @media(min-width:821px){
@@ -441,8 +451,7 @@ tbody tr:active{background:rgba(91,157,255,.08)}
             <th data-s="ipa">音标</th>
             <th data-s="cn">意思</th>
             <th>例句 / 翻译</th>
-            <th style="width:46px">掌握</th>
-            <th style="width:40px">收藏</th>
+            <th style="width:96px">掌握 / 收藏</th>
           </tr>
         </thead>
         <tbody id="tb"></tbody>
@@ -551,12 +560,6 @@ let lastSpoken = null, lastRate = 0.9;
 let fbFilter = 'all', fbQuery = '', openSet = new Set();
 let qFilter = 'all', qPos = 0, qRevealed = null, qLastInput = '', qHinted = false;
 
-function saveAll(){
-  localStorage.setItem(K_MASTER, JSON.stringify([...mastered]));
-  localStorage.setItem(K_FAVW, JSON.stringify([...favWords]));
-  localStorage.setItem(K_FAVF, JSON.stringify([...favForms]));
-  localStorage.setItem(K_QUIZ, JSON.stringify(quizRec));
-}
 function esc(s){
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -681,8 +684,7 @@ function renderWords(){
       <td class="ipa">${esc(d.ipa) || '—'}</td>
       <td class="cn">${esc(d.cn) || '<span style="color:#66748c">待补充</span>'}</td>
       <td class="ex">${d.ex ? `<i>${esc(d.ex)}</i><button class="spk spkex" data-say="${esc(d.ex)}" data-rate="0.6">🐢</button><button class="spk spkex" data-say="${esc(d.ex)}" data-rate="1">🗣️</button><em>${esc(d.excn)}</em>` : '<span style="color:#66748c">—</span>'}</td>
-      <td><button class="mk ${mastered.has(d.w) ? 'on' : ''}" data-mk="${esc(d.w)}">${mastered.has(d.w) ? '★' : '☆'}</button></td>
-      <td><button class="fav ${favWords.has(d.w) ? 'on' : ''}" data-fav="${esc(d.w)}">${favWords.has(d.w) ? '♥' : '♡'}</button></td>
+      <td class="acts"><button class="mk ${mastered.has(d.w) ? 'on' : ''}" data-mk="${esc(d.w)}" title="标记已掌握">${mastered.has(d.w) ? '★' : '☆'}</button><button class="fav ${favWords.has(d.w) ? 'on' : ''}" data-fav="${esc(d.w)}" title="收藏">${favWords.has(d.w) ? '♥' : '♡'}</button></td>
     </tr>`).join('');
   $('empty').hidden = rows.length > 0;
 
@@ -752,7 +754,8 @@ function renderFormula(){
 }
 
 /* ================= 填空 ================= */
-/* 题库由 enterLang() -> rebuildBlankPool() 建立 */
+
+FORMULAS.forEach((f, i) => f.ex.forEach((e, k) => { if (e.quiz) ALL_BLANK.push(i + ':' + k); }));
 
 function fOf(key){ return FORMULAS[parseInt(key.split(':')[0], 10)]; }
 function eOf(key){
@@ -1167,7 +1170,7 @@ function openSheet(){
       「设置 → 时间和语言 → 语音 → 添加语音」装本地英语语音。</span></div>
     <div class="kv"><span class="k">已掌握</span><span class="v">${mastered.size} 词</span></div>
     <div class="kv"><span class="k">已做题</span><span class="v">${Object.keys(quizRec).length} 道</span></div>
-    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 15:25</span></div>
+    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 15:55</span></div>
     <div class="act">
       <button id="voice-test">🔊 试听一句</button>
       <button id="sheet-close">关闭</button>
