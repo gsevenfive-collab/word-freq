@@ -1,5 +1,5 @@
 /* 高频词 PWA · 离线缓存 */
-const CACHE = 'wf-freq-b88f5343b1';
+const CACHE = 'wf-freq-d138279592';
 const ASSETS = [
   './',
   './index.html',
