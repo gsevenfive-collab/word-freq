@@ -1186,7 +1186,7 @@ function openSheet(){
       「设置 → 时间和语言 → 语音 → 添加语音」装本地英语语音。</span></div>
     <div class="kv"><span class="k">已掌握</span><span class="v">${mastered.size} 词</span></div>
     <div class="kv"><span class="k">已做题</span><span class="v">${Object.keys(quizRec).length} 道</span></div>
-    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 16:07</span></div>
+    <div class="kv"><span class="k">版本</span><span class="v">v 2026-10-19 16:08</span></div>
     <div class="act">
       <button id="voice-test">🔊 试听一句</button>
       <button id="sheet-close">关闭</button>
@@ -1242,6 +1242,18 @@ document.addEventListener('keydown', e => {
 });
 
 /* ================= 启动 ================= */
+
+/* pickspon-toggle：语言选择页点击赞助展开收款码 */
+(function(){
+  var b = document.getElementById('pick-sponsor');
+  var box = document.getElementById('pickqr');
+  if (!b || !box) return;
+  b.addEventListener('click', function(){
+    box.hidden = !box.hidden;
+    b.textContent = box.hidden ? '☕ 点我赞助' : '收起收款码';
+    if (!box.hidden) box.scrollIntoView({ block: 'nearest' });
+  });
+})();
 (function init(){
   renderPicker();
   const hash = (location.hash || '').replace('#', '');
